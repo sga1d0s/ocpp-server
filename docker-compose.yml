@@ -4,7 +4,7 @@ services:
     container_name: ocpp-server
     env_file: stack.env
     ports:
-      - "9000:9000"
+      - "127.0.0.1:9000:9000"
     environment:
       - PORT=9000
     restart: unless-stopped
