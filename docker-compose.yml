@@ -2,6 +2,7 @@ services:
   ocpp-server:
     build: .
     container_name: ocpp-server
+    env_file: stack.env
     ports:
       - "9000:9000"
     environment:
