@@ -1,9 +1,3 @@
-try {
-  require('dotenv').config();
-} catch (error) {
-  // dotenv es opcional: en Docker/Portainer las variables deberían venir del entorno real
-}
-
 const http = require('http');
 const WebSocket = require('ws');
 
@@ -19,7 +13,7 @@ const wss = new WebSocket.Server({ server });
 
 const chargers = new Map();
 
-console.log('🔐 ALLOWED_CHARGERS:', ALLOWED_CHARGERS.length ? ALLOWED_CHARGERS : 'sin restricción configurada');
+console.log('🔐 ALLOWED_CHARGERS:', ALLOWED_CHARGERS);
 
 function now() {
   return new Date().toISOString();
