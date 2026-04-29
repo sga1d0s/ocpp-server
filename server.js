@@ -29,6 +29,11 @@ const wss = new WebSocket.Server({ server });
 // Valor: datos del cargador + socket activo.
 const chargers = new Map();
 
+// Ping técnico a nivel WebSocket.
+// No es un Heartbeat OCPP: solo sirve para mantener viva la conexión WebSocket
+// y evitar cortes por timeout del reverse proxy cuando no hay tráfico.
+const WS_PING_INTERVAL_MS = 30_000;
+
 console.log('🔐 ALLOWED_CHARGERS:', ALLOWED_CHARGERS);
 
 // Helper para generar fechas ISO, que es el formato esperado por OCPP.
@@ -65,6 +70,14 @@ wss.on('connection', (ws, req) => {
     ws.close(1008, 'Unauthorized charge point');
     return;
   }
+
+  // Marcador técnico para saber si el cliente responde a los ping WebSocket.
+  // El cliente WebSocket responde con pong automáticamente si la conexión está viva.
+  ws.isAlive = true;
+
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
 
   // Guardamos el cargador como conectado.
   // Esto permite consultar luego /chargers y saber qué cargadores están vivos.
@@ -240,6 +253,29 @@ server.on('request', (req, res) => {
   res.writeHead(404);
   res.end('Not found');
 });
+
+// Mantiene vivas las conexiones WebSocket y limpia sockets muertos.
+// Si un cargador no responde al ping anterior, se termina la conexión.
+setInterval(() => {
+  chargers.forEach((charger, chargePointId) => {
+    const ws = charger.ws;
+
+    if (ws.readyState !== WebSocket.OPEN) {
+      chargers.delete(chargePointId);
+      return;
+    }
+
+    if (ws.isAlive === false) {
+      console.log(`💀 Cargador sin respuesta al ping, cerrando conexión: ${chargePointId}`);
+      ws.terminate();
+      chargers.delete(chargePointId);
+      return;
+    }
+
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, WS_PING_INTERVAL_MS);
 
 // Arranque del servidor.
 // Escucha en 0.0.0.0 para que Docker pueda exponerlo al host/reverse proxy.
