@@ -13,7 +13,7 @@ const wss = new WebSocket.Server({ server });
 
 const chargers = new Map();
 
-console.log('🔐 ALLOWED_CHARGERS:', ALLOWED_CHARGERS);
+console.log('🔐 Allowed chargers:', ALLOWED_CHARGERS);
 
 function now() {
   return new Date().toISOString();
