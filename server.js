@@ -3,10 +3,17 @@ const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 9000;
 
+const ALLOWED_CHARGERS = (process.env.ALLOWED_CHARGERS || '')
+  .split(',')
+  .map(x => x.trim())
+  .filter(Boolean);
+
 const server = http.createServer();
 const wss = new WebSocket.Server({ server });
 
 const chargers = new Map();
+
+console.log('🔐 ALLOWED_CHARGERS:', ALLOWED_CHARGERS);
 
 function now() {
   return new Date().toISOString();
@@ -24,6 +31,14 @@ wss.on('connection', (ws, req) => {
   const urlParts = req.url.split('/').filter(Boolean);
   const chargePointId = urlParts[urlParts.length - 1] || 'unknown';
 
+  // 🔒 Seguridad: validar cargador
+  if (ALLOWED_CHARGERS.length && !ALLOWED_CHARGERS.includes(chargePointId)) {
+    console.log(`⛔ Cargador no autorizado: ${chargePointId}`);
+    ws.close(1008, 'Unauthorized charge point');
+    return;
+  }
+
+  // Guardar cargadores conectados
   chargers.set(chargePointId, {
     id: chargePointId,
     connectedAt: now(),
